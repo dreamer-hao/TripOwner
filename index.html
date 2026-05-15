@@ -537,7 +537,7 @@ body.sidebar-open #sidebar{
     <div class="form-row mb-3">
       <div class="form-group">
         <label class="form-label" id="lbl-np-name">计划名称 *</label>
-        <input id="np-name" class="form-input" placeholder="我的北京之旅" maxlength="50">
+        <input id="np-name" class="form-input" placeholder="我的中国之旅" maxlength="50">
       </div>
       <div class="form-group">
         <label class="form-label" id="lbl-np-icon">图标</label>
@@ -680,7 +680,7 @@ body.sidebar-open #sidebar{
     <div class="form-row mb-3">
       <div class="form-group">
         <label class="form-label" id="ep-name-label">计划名称 *</label>
-        <input id="ep-name" class="form-input" placeholder="我的东京之旅">
+        <input id="ep-name" class="form-input" placeholder="我的中国之旅">
       </div>
       <div class="form-group">
         <label class="form-label" id="ep-status-label">状态</label>
@@ -1066,7 +1066,7 @@ body.sidebar-open #sidebar{
   </div>
   <div class="modal-body">
     <div class="form-group mb-3">
-      <label class="form-label">类别</label>
+      <label class="form-label" id="exp-cat-label">类别</label>
       <select id="exp-category" class="form-input">
         <option value="transport">🚌 交通</option><option value="accommodation">🏨 住宿</option>
         <option value="food">🍜 餐饮</option><option value="tickets">🎫 门票</option>
@@ -1081,16 +1081,16 @@ body.sidebar-open #sidebar{
       <div class="form-group">
         <label class="form-label">货币</label>
         <select id="exp-currency" class="form-input">
-          <option>CNY</option><option>USD</option><option>EUR</option><option>GBP</option><option>JPY</option>
+          <option>CNY</option><option>USD</option><option>JPY</option><option>EUR</option><option>GBP</option>
           <option>KRW</option><option>HKD</option><option>SGD</option><option>AUD</option><option>CAD</option>
-          <option>NZD</option><option>CHF</option><option>TWD</option><option>THB</option><option>MYR</option>
-          <option>VND</option><option>IDR</option><option>PHP</option><option>INR</option><option>AED</option>
-          <option>TRY</option><option>BRL</option><option>ZAR</option>
+          <option>INR</option><option>THB</option><option>MYR</option><option>VND</option><option>IDR</option>
+          <option>PHP</option><option>TWD</option><option>CHF</option><option>NZD</option><option>AED</option>
+          <option>TRY</option><option>BRL</option><option>ZAR</option><option>RUB</option><option>MXN</option>
         </select>
       </div>
     </div>
     <div class="form-group">
-      <label class="form-label" id="exp-note-label">备注</label>
+      <label class="form-label">备注</label>
       <input id="exp-desc" class="form-input" placeholder="简单描述这笔消费">
     </div>
   </div>
@@ -1135,11 +1135,11 @@ body.sidebar-open #sidebar{
 <div class="modal-overlay" id="modal-mbti-quiz">
 <div class="modal">
   <div class="modal-header">
-    <span class="modal-title">🔮 AI 帮你判断旅行人格</span>
+    <span class="modal-title" id="mbti-quiz-modal-title">🔮 AI 帮你判断旅行人格</span>
     <button class="close-btn" onclick="closeModal('modal-mbti-quiz')">✕</button>
   </div>
   <div class="modal-body" id="mbti-quiz-body">
-    <div class="text-muted text-sm mb-3"><span id="mbti-scenario-label">回答几道情景题，AI为你推断旅行风格</span></div>
+    <div class="text-muted text-sm mb-3" id="mbti-quiz-subtitle">回答几道情景题，AI为你推断旅行风格</div>
     <div id="mbti-questions"></div>
   </div>
   <div class="modal-footer">
@@ -1802,7 +1802,7 @@ async function api(method, path, body){
     if(path === '/geocode' && method === 'POST'){
       const q = encodeURIComponent(body.query||'');
       const lim = body.limit||5;
-      const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=${lim}&accept-language=zh-CN,zh,en`,{headers:{'User-Agent':'TripOwner/2.0'}});
+      const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=${lim}&accept-language=zh-CN,zh,en`,{headers:{'User-Agent':'TripOwner/2.0 firebase'}});
       const data = await r.json();
       return {results: data.map(d=>({name:d.display_name, lat:parseFloat(d.lat), lng:parseFloat(d.lon), type:d.type}))};
     }
@@ -2112,6 +2112,12 @@ function buildTravelSystemPromptFront(plan){
   const notes=plan.notes?('\n⭐ 高优先级备注：'+plan.notes):'';
   const lang=getLangForPlan(plan);
   const langNote=LANG_INSTRUCTIONS_FRONT[lang]||LANG_INSTRUCTIONS_FRONT.zh;
+  const currency=plan.budget_currency||'CNY';
+  const budget=plan.budget_total||0;
+  const tpl=plan.budget_template||'balanced';
+  const tplNote=tpl==='budget'?`穷游模式：使用青旅/经济酒店，公共交通，街头小吃。景点数量不减少，只压缩住宿、交通、餐饮费用。`:
+    tpl==='luxury'?`豪华模式：五星酒店，精品餐厅，专车出行。保持景点数量不变，提升品质。`:
+    `舒适模式：三四星酒店，当地特色餐厅，公共交通+出租车结合。保持足够景点数量。`;
   const hotelHint=companions.some(c=>c.type&&(c.type.includes('儿童')||c.type.includes('child')))?
     '\n🏨 住宿建议：有儿童同行，优先推荐家庭房或套房，考虑儿童设施。':
     companions.some(c=>c.type&&(c.type.includes('老人')||c.type.includes('senior')))?
@@ -2119,6 +2125,8 @@ function buildTravelSystemPromptFront(plan){
   return '你是TripOwner，一位拥有20年经验的顶级个性化旅行规划师。'+
     '\n'+modeInstr+
     '\n用户国籍：'+(plan.nationality||'CN')+'，MBTI：'+(plan.mbti_type||'未知')+'，同行人员：'+companionDesc+
+    '\n总预算：'+budget+' '+currency+'，预算风格：'+tplNote+
+    '\n⚠️ 所有金额必须使用 '+currency+' 作为货币单位（JSON中只写数字）。景点数量不得因预算削减，只调整住宿和餐饮档次。'+
     '\n核心原则：根据同行人员组成推荐最合适的景点、餐厅和住宿；推荐小众高性价比选择，每个景点附带实用Tips，输出严格按JSON格式。'+
     notes+hotelHint+
     '\n🌐 强制输出语言：'+langNote;
@@ -2130,11 +2138,13 @@ function buildFullPlanPromptFront(plan, extra){
   const extraNote=extra?('\n⭐ 补充要求：'+extra):'';
   const startDate=plan.start_date||'';
   const endDate=plan.end_date||'';
+  const currency=plan.budget_currency||'CNY';
+  const budget=plan.budget_total||0;
   const jsonTemplate='{"overview":"行程总览","highlights":["亮点1"],"visa_reminder":"",' +
-    '"budget_allocation":{"transport":{"allocated":0,"percentage":0,"details":"","hotel_suggestions":[]},' +
-    '"accommodation":{"allocated":0,"percentage":0,"details":"","hotel_suggestions":[{"name":"酒店名","price_per_night":300,"type":"酒店","stars":4,"reason":"推荐理由，考虑同行人员"}]},' +
-    '"food":{"allocated":0,"percentage":0,"details":""},' +
-    '"tickets":{"allocated":0,"percentage":0,"details":""},' +
+    '"budget_allocation":{"transport":{"allocated":0,"percentage":0,"details":"交通费用说明，单位'+currency+'"},' +
+    '"accommodation":{"allocated":0,"percentage":0,"details":"住宿费用说明，单位'+currency+'","hotel_suggestions":[{"name":"酒店名","price_per_night":300,"type":"酒店","stars":4,"reason":"推荐理由，考虑同行人员"}]},' +
+    '"food":{"allocated":0,"percentage":0,"details":"餐饮费用说明，单位'+currency+'"},' +
+    '"tickets":{"allocated":0,"percentage":0,"details":"门票费用说明，单位'+currency+'"},' +
     '"shopping":{"allocated":0,"percentage":0,"details":""},' +
     '"other":{"allocated":0,"percentage":0,"details":""}},' +
     '"packing_suggestions":{"clothing":[],"documents":[],"electronics":[],"health":[],"other":[]},' +
@@ -2147,7 +2157,9 @@ function buildFullPlanPromptFront(plan, extra){
     '\n目的地：'+dests+
     '\n日期：'+startDate+'至'+endDate+
     '\n同行人员：'+companionDesc+
-    '\n预算：'+(plan.budget_total||0)+' '+(plan.budget_currency||'CNY')+
+    '\n总预算：'+budget+' '+currency+'（所有金额必须用'+currency+'，JSON中只写数字，不写货币符号）' +
+    '\n⚠️ budget_allocation各项allocated之和必须等于'+budget+'，percentage之和等于100' +
+    '\n⚠️ 景点数量不得因预算削减，只调整住宿档次和餐饮档次' +
     '\n出行方式：'+(plan.transport_mode||'mixed')+
     '\n规划模式：'+(plan.planning_mode==='J'?'J型精细':'P型随性')+
     extraNote+
@@ -2234,6 +2246,19 @@ const ITEM_ICONS={attraction:'🏛️',meal:'🍜',accommodation:'🏨',transpor
 const ITEM_LABELS={attraction:'景点',meal:'餐饮',accommodation:'住宿',transport:'交通',activity:'活动',shopping:'购物',other:'其他'};
 const PACKING_CATS={clothing:'👕 衣物',documents:'📄 证件',electronics:'📱 电子设备',health:'💊 药品',other:'🎒 其他'};
 
+// ─── Currency symbol map ──────────────────────────────────────────────────────
+const CURRENCY_SYMBOLS={
+  CNY:'¥',JPY:'¥',USD:'$',CAD:'CA$',AUD:'A$',NZD:'NZ$',
+  EUR:'€',GBP:'£',CHF:'Fr',SEK:'kr',NOK:'kr',DKK:'kr',
+  KRW:'₩',HKD:'HK$',TWD:'NT$',SGD:'S$',MYR:'RM',
+  THB:'฿',IDR:'Rp',PHP:'₱',VND:'₫',INR:'₹',
+  AED:'د.إ',TRY:'₺',BRL:'R$',ZAR:'R',MXN:'$',RUB:'₽',
+  SAR:'﷼',PKR:'₨',BDT:'৳',NGN:'₦',EGP:'E£',PLN:'zł'
+};
+function getCurrencySymbol(code){
+  return CURRENCY_SYMBOLS[(code||'CNY').toUpperCase()]||(code||'¥');
+}
+
 // ─── i18n ─────────────────────────────────────────────────────────────────────
 const T={
   zh:{
@@ -2318,8 +2343,13 @@ function applyI18n(){
   // MBTI quiz button
   const mbtiQuizBtn=document.getElementById('mbti-quiz-btn');
   if(mbtiQuizBtn)mbtiQuizBtn.textContent=isEN?'🔮 Discover Your Travel Personality':'🔮 AI 帮你判断旅行人格';
-  const mbtiScenarioLabel=document.getElementById('mbti-scenario-label');
-  if(mbtiScenarioLabel)mbtiScenarioLabel.textContent=isEN?'Answer a few questions, AI infers your travel style':'回答几道情景题，AI为你推断旅行风格';
+  // MBTI quiz modal i18n
+  const mbtiModalTitle=document.getElementById('mbti-quiz-modal-title');
+  if(mbtiModalTitle)mbtiModalTitle.textContent=isEN?'🔮 Discover Your Travel Personality':'🔮 AI 帮你判断旅行人格';
+  const mbtiSubtitle=document.getElementById('mbti-quiz-subtitle');
+  if(mbtiSubtitle)mbtiSubtitle.textContent=isEN?'Answer a few scenario questions and AI will infer your travel style':'回答几道情景题，AI为你推断旅行风格';
+  const mbtiSubmitBtn=document.querySelector('#modal-mbti-quiz .btn-primary');
+  if(mbtiSubmitBtn)mbtiSubmitBtn.textContent=isEN?'Get My Travel Type':'提交判断';
   const agentBtn=document.querySelector('#page-ai .home-header .btn-primary');
   if(agentBtn)agentBtn.innerHTML='+ <span>'+t('new_agent_btn')+'</span>';
 
@@ -2483,6 +2513,14 @@ function applyI18n(){
   if(itemSaveBtn)itemSaveBtn.textContent=isEN?'Save':'保存';
   const itemCancelBtn=document.getElementById('item-cancel-btn');
   if(itemCancelBtn)itemCancelBtn.textContent=isEN?'Cancel':'取消';
+  // New plan modal placeholder
+  const npName=document.getElementById('np-name');
+  if(npName)npName.placeholder=isEN?'My China Trip':'我的中国之旅';
+  const npDest=document.getElementById('np-dest');
+  if(npDest)npDest.placeholder=isEN?'Beijing, Shanghai, Chengdu':'北京, 上海, 成都';
+  // Expense modal category label fix
+  const expCatLabel=document.getElementById('exp-cat-label');
+  if(expCatLabel)expCatLabel.textContent=isEN?'Category':'类别';
   // Mobile nav labels
   const mobLabels={home:isEN?'Plans':'计划',dash:isEN?'Dashboard':'看板',ai:'AI',settings:isEN?'Settings':'设置',new:isEN?'New':'新建',days:isEN?'Days':'行程'};
   ['home','dash','ai','settings','new','days'].forEach(k=>{const el=document.getElementById('mob-label-'+k);if(el)el.textContent=mobLabels[k];});
@@ -2765,7 +2803,7 @@ function openNewPlanModal(){
   // date picker locale follows html[lang] set globally
   document.getElementById('lbl-np-dest').textContent=isEN?'Destinations (comma separated)':'目的地（多个用逗号分隔）';
   document.getElementById('np-dest').placeholder=isEN?'Tokyo, Osaka, Kyoto':'东京, 大阪, 京都';
-  document.getElementById('np-name').placeholder=isEN?'My Beijing Trip':'我的北京之旅';
+  document.getElementById('np-name').placeholder=isEN?'My Tokyo Trip':'我的东京之旅';
   document.getElementById('lbl-np-budget').textContent=isEN?'Total Budget':'总预算';
   document.getElementById('lbl-np-budget-tpl').textContent=isEN?'Budget Template':'预算模板';
   document.getElementById('opt-budget-budget').textContent=isEN?'💰 Budget (Value priority)':'💰 穷游（优先性价比）';
@@ -2908,7 +2946,7 @@ async function openEditPlanModal(planId){
   document.getElementById('ep-cancel-btn').textContent=isEN?'Cancel':'取消';
   document.getElementById('ep-save-btn').textContent=isEN?'💾 Save Changes':'💾 保存修改';
   const epNameLbl=document.getElementById('ep-name-label');if(epNameLbl)epNameLbl.textContent=isEN?'Plan Name *':'计划名称 *';
-  document.getElementById('ep-name').placeholder=isEN?'My Beijing Trip':'我的北京之旅';
+  document.getElementById('ep-name').placeholder=isEN?'My China Trip':'我的中国之旅';
   const epStatusLbl=document.getElementById('ep-status-label');if(epStatusLbl)epStatusLbl.textContent=isEN?'Status':'状态';
   const epBudgetLbl=document.getElementById('ep-budget-label');if(epBudgetLbl)epBudgetLbl.textContent=isEN?'Budget':'预算';
   const epNatLbl=document.getElementById('ep-nationality-label');if(epNatLbl)epNatLbl.textContent=isEN?'Nationality':'国籍';
@@ -3204,16 +3242,21 @@ function renderItemCard(item){
   const tags=Array.isArray(item.tags)?item.tags:[];
   const energyDots=[1,2,3].map(n=>`<div class="energy-dot ${n<=item.energy_cost?'filled':'empty'}"></div>`).join('');
   const timeStr=item.start_time&&item.end_time?`${item.start_time}–${item.end_time}`:item.start_time||'';
+  // Use plan currency symbol
+  const curCode=S.currentPlan?.budget_currency||'CNY';
+  const curSym=getCurrencySymbol(curCode);
   let chips='';
-  if(item.item_type==='attraction'&&item.ticket_price)chips+=`<div class="detail-chip">🎫 ${getCurrencySymbol(S.currentPlan?.budget_currency)}${item.ticket_price}</div>`;
+  if(item.item_type==='attraction'&&item.ticket_price)chips+=`<div class="detail-chip">🎫 ${curSym}${item.ticket_price}</div>`;
   if(item.item_type==='transport'){
     if(item.transport_mode)chips+=`<div class="detail-chip">🚌 ${item.transport_mode}${item.transport_duration?' · '+item.transport_duration:''}</div>`;
-    if(item.transport_cost)chips+=`<div class="detail-chip">💰 ${getCurrencySymbol(S.currentPlan?.budget_currency)}${item.transport_cost}</div>`;
+    if(item.transport_cost)chips+=`<div class="detail-chip">💰 ${curSym}${item.transport_cost}</div>`;
     if(item.transport_from&&item.transport_to)chips+=`<div class="detail-chip">📍 ${item.transport_from} → ${item.transport_to}</div>`;
   }
-  if(item.item_type==='meal'&&item.meal_budget)chips+=`<div class="detail-chip">🍽️ ${getCurrencySymbol(S.currentPlan?.budget_currency)}${item.meal_budget}</div>`;
-  if(item.item_type==='accommodation'&&item.accommodation_price)chips+=`<div class="detail-chip">🏨 ${getCurrencySymbol(S.currentPlan?.budget_currency)}${item.accommodation_price}/${S.lang==="en"?"night":"晚"}</div>`;
-  if(item.ticket_need_booking)chips+=`<div class="detail-chip" style="color:var(--orange)">⚠️ 需预约</div>`;
+  if(item.item_type==='meal'&&item.meal_budget)chips+=`<div class="detail-chip">🍽️ ${curSym}${item.meal_budget}</div>`;
+  const nightLabel=S.lang==='en'?'/night':'/晚';
+  if(item.item_type==='accommodation'&&item.accommodation_price)chips+=`<div class="detail-chip">🏨 ${curSym}${item.accommodation_price}${nightLabel}</div>`;
+  const bookingLabel=S.lang==='en'?'⚠️ Booking req.':'⚠️ 需预约';
+  if(item.ticket_need_booking)chips+=`<div class="detail-chip" style="color:var(--orange)">${bookingLabel}</div>`;
   return `<div class="item-card" onclick="toggleItemExpand(this)" draggable="true">
     ${item.plan_b?'<div class="planb-badge">🔮 Plan B</div>':''}
     <div class="item-card-header">
@@ -3662,32 +3705,49 @@ async function deleteCustomBudgetCat(id){
 function openExpenseModal(){
   const isEN=S.lang==='en';
   document.getElementById('expense-modal-title').textContent=isEN?'💸 Record Expense':'💸 记录实际支出';
-  // i18n category options
+  // i18n category options - full English names
   const catSel=document.getElementById('exp-category');
-  if(catSel){const catNames={transport:isEN?'Transport':'交通',accommodation:isEN?'Stay':'住宿',food:isEN?'Food':'餐饮',tickets:isEN?'Tickets':'门票',shopping:isEN?'Shopping':'购物',other:isEN?'Other':'其他'};
-  [...catSel.options].forEach(o=>{if(catNames[o.value])o.text=catNames[o.value];});}
-  // i18n labels
-  const lblMap={'分类':'Category','金额':'Amount','货币':'Currency','备注':'Note'};
-  const revMap={'Category':'分类','Amount':'金额','Currency':'货币','Note':'备注'};
+  if(catSel){
+    const catNames={
+      transport:isEN?'🚌 Transport':'🚌 交通',
+      accommodation:isEN?'🏨 Accommodation':'🏨 住宿',
+      food:isEN?'🍜 Food & Dining':'🍜 餐饮',
+      tickets:isEN?'🎫 Tickets & Entrance':'🎫 门票',
+      shopping:isEN?'🛍️ Shopping':'🛍️ 购物',
+      other:isEN?'📦 Other':'📦 其他'
+    };
+    [...catSel.options].forEach(o=>{if(catNames[o.value])o.text=catNames[o.value];});
+  }
+  // i18n labels — handle both 分类/Category for the category label
   document.querySelectorAll('#modal-expense .form-label').forEach(l=>{
     const txt=l.textContent.trim();
-    if(isEN&&lblMap[txt])l.textContent=lblMap[txt];
-    else if(!isEN&&revMap[txt])l.textContent=revMap[txt];
+    const map={
+      '分类':'Category','类别':'Category','金额':'Amount','货币':'Currency','备注':'Note',
+      'Category':'分类','Amount':'金额','Currency':'货币','Note':'备注'
+    };
+    if(isEN && map[txt] && !['Amount','Currency','Note','Category'].includes(txt)) l.textContent=map[txt];
+    else if(!isEN && map[txt] && ['Amount','Currency','Note','Category'].includes(txt)) l.textContent=map[txt];
   });
+  // Fix the category label directly
+  const catLabelEls=document.querySelectorAll('#modal-expense .form-label');
+  if(catLabelEls[0]) catLabelEls[0].textContent=isEN?'Category':'类别';
+  if(catLabelEls[1]) catLabelEls[1].textContent=isEN?'Amount':'金额';
+  if(catLabelEls[2]) catLabelEls[2].textContent=isEN?'Currency':'货币';
+  if(catLabelEls[3]) catLabelEls[3].textContent=isEN?'Note':'备注';
   const saveBtn=document.querySelector('#modal-expense .btn-primary');
   if(saveBtn)saveBtn.textContent=isEN?'✅ Record':'✅ 记录支出';
   const cancelBtn=document.getElementById('expense-cancel-btn');
   if(cancelBtn)cancelBtn.textContent=isEN?'Cancel':'取消';
   const expDesc=document.getElementById('exp-desc');
   if(expDesc)expDesc.placeholder=isEN?'Brief description of this expense':'简单描述这笔消费';
-  const expNoteLabel=document.getElementById('exp-note-label');
-  if(expNoteLabel)expNoteLabel.textContent=isEN?'Note':'备注';
-  // Set current plan currency as default
-  if(S.currentPlan?.budget_currency){
-    const expCurr=document.getElementById('exp-currency');
-    if(expCurr)expCurr.value=S.currentPlan.budget_currency;
+  // Pre-select the plan's currency in expense modal
+  const planCurrency=(S.currentPlan?.budget_currency||'CNY');
+  const expCurSel=document.getElementById('exp-currency');
+  if(expCurSel){
+    // Try to select matching option, fallback to first
+    const opt=[...expCurSel.options].find(o=>o.value===planCurrency);
+    if(opt) expCurSel.value=planCurrency;
   }
-  const expNoteLabel=document.querySelector('#modal-expense .form-label:last-of-type');
   openModal('modal-expense');
 }
 async function saveExpense(){
@@ -4126,6 +4186,7 @@ function openAIGenModal(){
     const extraInput = document.getElementById('ai-extra-prompt');
     if(extraInput) extraInput.placeholder = isEN ? 'e.g., Focus on food, less crowded places...' : '如：希望多安排美食体验，少去人多的景点...';
     document.getElementById('ai-gen-btn').textContent = isEN ? '✨ Start Generation' : '✨ 开始生成';
+    document.getElementById('ai-gen-status').textContent = isEN ? 'AI planning in progress...' : 'AI正在规划中...';
     // Also pre-translate result section labels
     const doneLabel = document.getElementById('ai-gen-done-label');
     if(doneLabel) doneLabel.textContent = isEN ? '✅ Generation complete!' : '✅ 生成完成！';
@@ -4142,11 +4203,6 @@ function openAIGenModal(){
 // ─── Two-Phase AI Planning ─────────────────────────────────────────────────────
 
 // Phase 1: Task Planner - generates macro overview + day themes
-// ─── Currency Symbol Helper ───────────────────────────────────────────────────
-const CURRENCY_SYMBOLS={CNY:'¥',USD:'$',EUR:'€',GBP:'£',JPY:'¥',KRW:'₩',HKD:'HK$',SGD:'S$',AUD:'A$',CAD:'C$',NZD:'NZ$',CHF:'CHF',TWD:'NT$',THB:'฿',MYR:'RM',VND:'₫',IDR:'Rp',PHP:'₱',INR:'₹',AED:'AED',TRY:'₺',BRL:'R$',ZAR:'R'};
-function getCurrencySymbol(code){return CURRENCY_SYMBOLS[(code||'').toUpperCase()]||code||'¥';}
-
-
 function buildPlannerSystemPrompt(plan){
   const mode=plan.planning_mode||'P';
   const modeInstr=mode==='J'?'J-type: precise timing, optimal single-route, prioritize completion':'P-type: loose time blocks, 30% buffer, always provide Plan B';
@@ -4160,13 +4216,28 @@ function buildPlannerSystemPrompt(plan){
   const hotelHint=hasChild?'\n🏨 Hotel: family rooms or suites required, child-friendly facilities.':
     hasElder?'\n🏨 Hotel: elevator access, no-step entry, accessible facilities.':
     totalPax>=4?'\n🏨 Hotel: consider connecting rooms or larger units for group.':'';
+  const budget=plan.budget_total||0;
+  const currency=plan.budget_currency||'CNY';
+  const tpl=plan.budget_template||'balanced';
+  const tplInstr=tpl==='budget'?
+    'BUDGET/BACKPACKER style: maximize value. Use hostels, guesthouses, or budget hotels. Use public transport (metro/bus). Keep street food and local restaurants. IMPORTANT: Do NOT reduce the number of attractions or sightseeing spots — only compress accommodation, transport, and meal costs. Visitors still deserve a full itinerary.':
+    tpl==='luxury'?
+    'LUXURY style: prioritize comfort and quality. Choose 4-5 star hotels, fine dining restaurants, private transport or taxis. IMPORTANT: Keep the same number of attractions as a normal trip — do not skip sightseeing. Only upgrade quality, not reduce quantity.':
+    'BALANCED/COMFORTABLE style: comfortable mid-range hotels (3-4 star), mix of local restaurants and nice dining, public transport + occasional taxi. Keep the full recommended set of attractions — only adjust accommodation and meal tiers to fit budget.';
   return `You are TripOwner, an elite travel strategist with 20 years experience.
 Mode: ${modeInstr}
 Party: ${compDesc} (total ${totalPax} people)
 Nationality: ${plan.nationality||'CN'}, MBTI: ${plan.mbti_type||'unknown'}
+Total Budget: ${budget} ${currency} (≈${totalPax?Math.round(budget/totalPax):budget} ${currency} per person)
+Budget Style: ${tplInstr}
+STRICT BUDGET RULES:
+1. All monetary values MUST be in ${currency} — do NOT mix currencies or use symbols in JSON
+2. The budget_allocation.*.allocated values MUST sum exactly to ${budget} ${currency}
+3. Do NOT reduce attraction count based on budget — compress hotel/transport/meal costs instead
+4. Hotel price_per_night must reflect the budget style
 ${hotelHint}
 ${plan.notes?'⭐ Priority notes: '+plan.notes:''}
-Core rules: tailor every recommendation to the travel party composition; suggest lesser-known high-value options; strict JSON output.
+Core rules: tailor recommendations to travel party; suggest authentic high-value options; strict JSON output only.
 🌐 ${langNote}`;
 }
 
@@ -4174,7 +4245,7 @@ function buildPlannerPrompt(plan){
   const dests=(plan.destinations||[]).join(', ')||plan.name||'';
   const companions=plan.companions||[];
   const totalPax=companions.reduce((s,c)=>s+(c.count||1),0)||(1);
-  const compDesc=companions.length?companions.map(c=>`${c.count||1} ${c.type}`).join(', '):'solo traveler';
+  const compDesc=companions.length?companions.map(c=>`${c.count||1} ${c.type}`).join(', '):'solo';
   const startDate=plan.start_date||'';
   const endDate=plan.end_date||'';
   let numDays=1;
@@ -4184,34 +4255,25 @@ function buildPlannerPrompt(plan){
   }
   const budget=plan.budget_total||0;
   const currency=plan.budget_currency||'CNY';
-  const sym=getCurrencySymbol(currency);
-  const perPax=totalPax?Math.round(budget/totalPax):budget;
-  const template=plan.budget_template||'balanced';
-  // Budget template guidance
-  const budgetGuide={
-    budget:`BUDGET TRIP: Maximize value. Prioritize free/low-cost attractions. Use public transport. Choose hostels or budget hotels (${sym}${Math.round(budget*0.25/numDays)}/night max). Keep meals under ${sym}${Math.round(budget*0.20/numDays/totalPax)} per person per day. DO NOT skip attractions — find free alternatives.`,
-    comfort:`COMFORT TRIP: Balance comfort and value. Mix of mid-range hotels (${sym}${Math.round(budget*0.30/numDays)}/night). Occasional splurge on must-see attractions is fine. Public transit + occasional taxi.`,
-    luxury:`LUXURY TRIP: Premium experience. 4-5 star hotels (${sym}${Math.round(budget*0.40/numDays)}/night min). Fine dining. Private transfers. No need to compromise on any experience.`,
-    balanced:`BALANCED TRIP: Comfortable mid-range. Good hotels (${sym}${Math.round(budget*0.30/numDays)}/night). Mix of dining options. Keep full attraction list.`
-  }[template]||'Balanced budget approach.';
+  const tpl=plan.budget_template||'balanced';
+  // Budget distribution hints based on template
+  const distHint=tpl==='budget'?
+    `Suggested split: transport 20%, accommodation 25%, food 20%, tickets 25%, shopping 5%, other 5%`:
+    tpl==='luxury'?
+    `Suggested split: transport 15%, accommodation 40%, food 25%, tickets 10%, shopping 7%, other 3%`:
+    `Suggested split: transport 20%, accommodation 30%, food 25%, tickets 15%, shopping 7%, other 3%`;
   return `Plan a ${numDays}-day trip to ${dests}.
 Party: ${compDesc} (${totalPax} people total)
 Dates: ${startDate} to ${endDate}
-Total budget: ${sym}${budget} ${currency} (≈${sym}${perPax} per person)
-Currency: ${currency} (use ${sym} symbol throughout)
-Transport: ${plan.transport_mode||'mixed'}
-Style: ${plan.planning_mode==='J'?'detailed/structured':'flexible/relaxed'}
-Budget template: ${template.toUpperCase()}
-${budgetGuide}
+Total Budget: ${budget} ${currency} — ALL allocated values below MUST sum to exactly ${budget}
+${distHint}
+Transport preference: ${plan.transport_mode||'mixed'}
+Planning style: ${plan.planning_mode==='J'?'detailed/structured':'flexible/relaxed'}
 ${plan.extra_prompt?'Extra requirements: '+plan.extra_prompt:''}
 
-⚠️ CRITICAL BUDGET RULES:
-- Use ${currency} (${sym}) for ALL prices in output — NEVER use ¥ unless currency is CNY/JPY
-- Keep ALL attractions in the plan regardless of budget level
-- On budget trips: compress hotel/transport/food costs, NOT attractions
-- Allocate budget proportionally across all ${numDays} days
+IMPORTANT: Do NOT reduce the number of attractions/sightseeing spots due to budget. Only adjust hotel category and meal tier.
 
-Output ONLY this JSON (no markdown):
+Output ONLY this JSON (no markdown, no explanation):
 {
   "overview": "trip overview 2-3 sentences",
   "highlights": ["highlight1","highlight2","highlight3"],
@@ -4219,31 +4281,40 @@ Output ONLY this JSON (no markdown):
   "total_days": ${numDays},
   "party_summary": "${compDesc}",
   "budget_allocation": {
-    "transport": {"allocated": 0, "percentage": 0, "details": ""},
-    "accommodation": {"allocated": 0, "percentage": 0, "details": "",
+    "transport": {"allocated": 0, "percentage": 0, "details": "transport breakdown in ${currency}"},
+    "accommodation": {"allocated": 0, "percentage": 0, "details": "hotel tier and cost in ${currency}",
       "hotel_suggestions": [{"name":"Hotel Name","price_per_night":0,"type":"hotel","stars":4,"reason":"why suitable for this party","suitable_for":"${compDesc}"}]},
-    "food": {"allocated": 0, "percentage": 0, "details": ""},
-    "tickets": {"allocated": 0, "percentage": 0, "details": ""},
+    "food": {"allocated": 0, "percentage": 0, "details": "meal plan in ${currency}"},
+    "tickets": {"allocated": 0, "percentage": 0, "details": "attractions/entrance fees in ${currency}"},
     "shopping": {"allocated": 0, "percentage": 0, "details": ""},
     "other": {"allocated": 0, "percentage": 0, "details": ""}
   },
   "packing_suggestions": {"clothing":[],"documents":[],"electronics":[],"health":[],"other":[]},
   "day_themes": [
-    {"day":1,"date":"${startDate}","theme":"Day theme","area":"Main area to cover","key_spots":["spot1","spot2"],"accommodation_area":"Where to stay tonight"}
+    {"day":1,"date":"${startDate}","theme":"Day theme","area":"Main area to cover","key_spots":["spot1","spot2","spot3"],"accommodation_area":"Where to stay tonight"}
   ]
 }`;
 }
 
+// Phase 2: Day Planner - generates detailed schedule for ONE day
 function buildDayPlannerSystemPrompt(plan, macro){
   const companions=plan.companions||[];
   const totalPax=companions.reduce((s,c)=>s+(c.count||1),0)||(1);
   const compDesc=companions.length?companions.map(c=>`${c.count||1} ${c.type}`).join(', '):'solo';
   const lang=getLangForPlan(plan);
   const langNote=LANG_INSTRUCTIONS_FRONT[lang]||LANG_INSTRUCTIONS_FRONT.zh;
-  return `You are TripOwner Day Planner. Create detailed hourly itinerary for ONE day.
-Party: ${compDesc} (${totalPax} people). Tailor everything to them.
-Trip context: ${macro.overview||''}. Hotel area: see day theme.
-Mode: ${plan.planning_mode==='J'?'J-type: precise 15-min slots':'P-type: flexible time blocks with Plan B'}
+  const currency=plan.budget_currency||'CNY';
+  const tpl=plan.budget_template||'balanced';
+  const tplNote=tpl==='budget'?'Budget travel: street food, public transit, guesthouses. Keep ALL attractions.':
+    tpl==='luxury'?'Luxury travel: fine dining, private transport, 5-star. Keep ALL attractions.':
+    'Balanced travel: mid-range restaurants, public+taxi, 3-4 star hotels. Keep ALL attractions.';
+  return `You are TripOwner Day Planner. Create a detailed hourly itinerary for ONE day.
+Party: ${compDesc} (${totalPax} people). Tailor every recommendation to them.
+Trip overview: ${macro.overview||''}
+Currency: ALL price values in ${currency} (numeric only, no symbols)
+Budget style: ${tplNote}
+Mode: ${plan.planning_mode==='J'?'J-type: precise 15-min time slots':'P-type: flexible time blocks with Plan B'}
+RULE: Include at least 3–5 attractions/activities per day. Do NOT skip attractions to save budget.
 🌐 ${langNote}`;
 }
 
@@ -4255,43 +4326,43 @@ function buildDayPlannerPrompt(plan, macro, dayTheme, dayIndex){
   const hasElder=companions.some(c=>c.type&&(c.type.includes('elder')||c.type.includes('老人')));
   const budget=macro.budget_allocation||{};
   const currency=plan.budget_currency||'CNY';
-  const sym=getCurrencySymbol(currency);
-  const dailyFood=budget.food?Math.round((budget.food.allocated||0)/(macro.total_days||1)):0;
-  const dailyTickets=budget.tickets?Math.round((budget.tickets.allocated||0)/(macro.total_days||1)):0;
-  const dailyAccom=budget.accommodation?Math.round((budget.accommodation.allocated||0)/(macro.total_days||1)):300;
-  const dailyTransport=budget.transport?Math.round((budget.transport.allocated||0)/(macro.total_days||1)):0;
+  const totalDays=macro.total_days||1;
+  const dailyFood=budget.food?Math.round((budget.food.allocated||0)/totalDays):0;
+  const dailyTickets=budget.tickets?Math.round((budget.tickets.allocated||0)/totalDays):0;
+  const dailyAccom=budget.accommodation?Math.round((budget.accommodation.allocated||0)/totalDays):0;
   const hotelArea=dayTheme.accommodation_area||'city center';
   const keySpots=(dayTheme.key_spots||[]).join(', ');
-  const childNote=hasChild?' (child-friendly options, no long waits)':'';
-  const elderNote=hasElder?' (accessible, not too much walking)':'';
-  const template=plan.budget_template||'balanced';
-  const budgetNote=template==='budget'
-    ?`BUDGET MODE: Keep hotel under ${sym}${dailyAccom}/night, food under ${sym}${Math.round(dailyFood/totalPax)}/person. Use public transit (bus/metro). Include ALL key attractions — find free entry times or alternatives if needed.`
-    :template==='luxury'
-    ?`LUXURY MODE: Premium hotels in ${hotelArea}, fine dining, private transfers. No budget compromises.`
-    :`Keep daily costs reasonable: hotel ≈${sym}${dailyAccom}/night, food ≈${sym}${dailyFood} total, transport ≈${sym}${dailyTransport}.`;
-  return `Day ${dayTheme.day}/${macro.total_days||'?'}: ${dayTheme.theme}
+  const childNote=hasChild?' (include child-friendly options, avoid long waits)':'';
+  const elderNote=hasElder?' (accessible venues, limit walking distance)':'';
+  return `Day ${dayTheme.day} of ${totalDays}: ${dayTheme.theme}
 Date: ${dayTheme.date}
-Area: ${dayTheme.area||''} | Key spots: ${keySpots}
+Area: ${dayTheme.area||''}
+Key spots to include: ${keySpots}
 Party: ${compDesc}${childNote}${elderNote}
-Currency: ${currency} — use ${sym} for ALL prices (never ¥ unless CNY/JPY)
-Daily budget: food ${sym}${dailyFood} | tickets ${sym}${dailyTickets} | hotel ${sym}${dailyAccom}/night | transport ${sym}${dailyTransport}
-Tonight: ${hotelArea}
-${budgetNote}
-${dayIndex===0?'First day: account for arrival/check-in time.':''}${dayIndex===(macro.total_days-1)?'Last day: account for check-out and departure.':''}
+Daily food budget: ≈${dailyFood} ${currency} total for ${totalPax} people (≈${totalPax?Math.round(dailyFood/totalPax):dailyFood} ${currency}/person)
+Daily tickets budget: ≈${dailyTickets} ${currency} total for ${totalPax} people
+Tonight's accommodation budget: ≈${dailyAccom} ${currency}/night
+Tonight's hotel area: ${hotelArea}
+${dayIndex===0?'Note: first day — account for arrival/check-in time. Start afternoon.':''}
+${dayIndex===(totalDays-1)?'Note: last day — account for check-out and departure. Wrap up by early afternoon.':''}
 
-⚠️ RULES: Include ALL planned attractions from key_spots. Compress hotel/food/transport if budget is tight — DO NOT remove attractions. Use ${sym} not ¥.
+ALL price fields MUST be numbers in ${currency} — no symbols.
+Include at least 3 attractions spread across morning/afternoon/evening.
 
-Output ONLY this JSON:
+Output ONLY this JSON (no markdown):
 {
   "day": ${dayTheme.day},
   "date": "${dayTheme.date}",
   "theme": "${dayTheme.theme}",
-  "morning": [{"name":"","item_type":"attraction","start_time":"09:00","end_time":"11:00","duration_minutes":120,"ticket_price":0,"ticket_need_booking":false,"transport_from":"","transport_to":"","transport_mode":"","transport_cost":0,"highlights":"","tips":"","plan_b":"","energy_cost":2,"tags":[],"lat":0,"lng":0}],
+  "morning": [{"name":"Attraction Name","item_type":"attraction","start_time":"09:00","end_time":"11:30","duration_minutes":150,"ticket_price":0,"ticket_need_booking":false,"transport_from":"hotel","transport_to":"attraction","transport_mode":"subway","transport_cost":0,"highlights":"what makes it special","tips":"practical tips","plan_b":"alternative if closed","energy_cost":2,"tags":["cultural","history"],"lat":0,"lng":0}],
   "afternoon": [],
   "evening": [],
-  "meals": [{"meal_type":"lunch","name":"","budget":${Math.round(dailyFood/3)},"cuisine":"","tips":"suitable for ${compDesc}"}],
-  "accommodation": {"name":"","price":${dailyAccom},"type":"hotel","tips":"in ${hotelArea}, suitable for ${compDesc}"}
+  "meals": [
+    {"meal_type":"breakfast","name":"Restaurant Name","budget":${Math.round(dailyFood/4)},"cuisine":"cuisine type","tips":"why recommended for ${compDesc}"},
+    {"meal_type":"lunch","name":"Restaurant Name","budget":${Math.round(dailyFood/3)},"cuisine":"cuisine type","tips":"why recommended"},
+    {"meal_type":"dinner","name":"Restaurant Name","budget":${Math.round(dailyFood/2.5)},"cuisine":"cuisine type","tips":"why recommended"}
+  ],
+  "accommodation": {"name":"Hotel Name","price":${dailyAccom||200},"type":"hotel","tips":"location and why suitable for ${compDesc}"}
 }`;
 }
 
@@ -4477,8 +4548,12 @@ function getMBTIQuestions(){ return S.lang==='en'?MBTI_QUESTIONS_EN:MBTI_QUESTIO
 function openMBTIQuiz(){
   S.mbtiQuizAnswers={};
   const isEN=S.lang==='en';
-  document.querySelector('#modal-mbti-quiz .modal-title').textContent=isEN?'🔮 Discover Your Travel Personality':'🔮 AI 帮你判断旅行人格';
-  document.querySelector('#modal-mbti-quiz .btn-primary')?.setAttribute('data-label',isEN?'Get My Type':'生成我的旅行人格');
+  const titleEl=document.getElementById('mbti-quiz-modal-title');
+  if(titleEl)titleEl.textContent=isEN?'🔮 Discover Your Travel Personality':'🔮 AI 帮你判断旅行人格';
+  const subEl=document.getElementById('mbti-quiz-subtitle');
+  if(subEl)subEl.textContent=isEN?'Answer a few scenario questions and AI will infer your travel style':'回答几道情景题，AI为你推断旅行风格';
+  const submitBtn=document.querySelector('#modal-mbti-quiz .btn-primary');
+  if(submitBtn)submitBtn.textContent=isEN?'Get My Travel Type':'提交判断';
   const questions=getMBTIQuestions();
   document.getElementById('mbti-questions').innerHTML=questions.map((q,i)=>`
     <div style="margin-bottom:1rem;padding:.75rem;background:var(--bg3);border-radius:var(--radius2)">
@@ -4500,7 +4575,8 @@ function submitMBTIQuiz(){
   Object.values(S.mbtiQuizAnswers).forEach(a=>traits[a.trait]=(traits[a.trait]||0)+1);
   S.selectedMBTI=[traits.E>=traits.I?'E':'I',traits.N>=traits.S?'N':'S',traits.T>=traits.F?'T':'F',traits.J>=traits.P?'J':'P'].join('');
   closeModal('modal-mbti-quiz');renderMBTIGrid();
-  toast(`AI推断你是 ${S.selectedMBTI} 型旅行者 ✨`,'success');
+  const isEN=S.lang==='en';
+  toast(isEN?`AI inferred your travel type: ${S.selectedMBTI} ✨`:`AI推断你是 ${S.selectedMBTI} 型旅行者 ✨`,'success');
 }
 
 // ─── Settings ─────────────────────────────────────────────────────────────────
