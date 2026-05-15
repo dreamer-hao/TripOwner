@@ -2003,7 +2003,10 @@ async function streamAI(path, body, onChunk, onDone, onError){
   const provider = body.provider||S.currentAIProvider||'deepseek';
   const cfg = getProviderConfig(provider);
   if(!cfg.api_key){
-    onError&&onError(`请先在【设置】中配置 ${PROVIDERS_INFO[provider]?.name||provider} 的 API Key`);
+    const isEN = S.lang === 'en';
+    onError&&onError(isEN
+      ? `Please configure ${PROVIDERS_INFO[provider]?.name||provider} API Key in [Settings] first`
+      : `请先在【设置】中配置 ${PROVIDERS_INFO[provider]?.name||provider} 的 API Key`);
     return;
   }
 
