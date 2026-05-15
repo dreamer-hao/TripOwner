@@ -561,7 +561,7 @@ body.sidebar-open #sidebar{
     <div id="day-hint" class="form-hint mb-3 hidden" style="color:var(--accent)"></div>
     <div class="form-group mb-3">
       <label class="form-label" id="lbl-np-dest">目的地（多个用逗号分隔）</label>
-      <input id="np-dest" class="form-input" placeholder="东京, 大阪, 京都">
+      <input id="np-dest" class="form-input" placeholder="北京, 上海, 重庆">
     </div>
     <div class="form-row mb-3">
       <div class="form-group">
@@ -704,7 +704,7 @@ body.sidebar-open #sidebar{
     </div>
     <div class="form-group mb-3">
       <label class="form-label">目的地</label>
-      <input id="ep-dest" class="form-input" placeholder="东京, 大阪">
+      <input id="ep-dest" class="form-input" placeholder="北京, 上海">
     </div>
     <div class="form-row mb-3">
       <div class="form-group">
@@ -2802,8 +2802,8 @@ function openNewPlanModal(){
   document.getElementById('lbl-np-end').textContent=isEN?'Return Date':'结束日期';
   // date picker locale follows html[lang] set globally
   document.getElementById('lbl-np-dest').textContent=isEN?'Destinations (comma separated)':'目的地（多个用逗号分隔）';
-  document.getElementById('np-dest').placeholder=isEN?'Tokyo, Osaka, Kyoto':'东京, 大阪, 京都';
-  document.getElementById('np-name').placeholder=isEN?'My Tokyo Trip':'我的东京之旅';
+  document.getElementById('np-dest').placeholder=isEN?'Beijing, Shanghai, Chongqing':'北京, 上海, 重庆';
+  document.getElementById('np-name').placeholder=isEN?'My China Trip':'我的中国之旅';
   document.getElementById('lbl-np-budget').textContent=isEN?'Total Budget':'总预算';
   document.getElementById('lbl-np-budget-tpl').textContent=isEN?'Budget Template':'预算模板';
   document.getElementById('opt-budget-budget').textContent=isEN?'💰 Budget (Value priority)':'💰 穷游（优先性价比）';
